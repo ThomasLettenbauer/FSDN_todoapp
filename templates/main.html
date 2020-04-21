@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>Todo App</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+	<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+	<style>
+		#error {
+			display: none;
+		}
+	</style>
+</head>
+
+<header>
+	<div class="navbar-header">
+		<a class="navbar-brand" href="/">
+		</a>
+	</div>
+
+</header>
+
+<body>
+
+	<script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+
+
+	<div class="container">
+		<table id="todos" class="table">
+			<thead>
+				<tr>
+					<th scope="col">#</th>
+					<th scope="col">Description</th>
+				</tr>
+			</thead>
+			<tbody>
+
+				{% for d in data %}
+
+				<tr>
+					<th scope="row">{{ d.id }}</th>
+					<td><input class="checkbox-completed" data-id="{{ d.id }}" type="checkbox" {%if d.completed %}
+							checked {% endif %}></td>
+					<td>{{ d.description }}</td>
+					<td><button class="btn btn-outline-danger todo-delete" data-id="{{ d.id }}" type="button">&cross;
+					</td>
+				</tr>
+
+				{% endfor %}
+
+			</tbody>
+		</table>
+
+		<div id="error" class="alert alert-danger .d-none" role="alert">Something went wrong!</div>
+
+		<div class="card" style="width: 18rem;">
+			<form id="form" method="post" action="/todos/create">
+				<div class="form-group text-center">
+					<label for="todoDescription">Enter a new To-Do</label>
+					<input type="text" class="form-control" id="description" aria-describedby="descriptionHelp"
+						name="description" placeholder="Enter description">
+					<small id="descriptionHelp" class="form-text text-muted">This is the description for your new
+						To-Do</small>
+				</div>
+				<div class="text-center">
+					<button type="submit" class="btn btn-primary">Add New To-Do</button>
+				</div>
+			</form>
+		</div>
+
+	</div>
+
+	<script>
+		const checkboxes = document.querySelectorAll('.checkbox-completed');
+
+		for (let i = 0; i < checkboxes.length; i++) {
+			const checkbox = checkboxes[i];
+			checkbox.onchange = function (e) {
+				console.log('event', e);
+				const newCompleted = e.target.checked;
+				const todoId = e.target.dataset['id'];
+				fetch('/todos/' + todoId + '/set-completed', {
+					method: 'POST',
+					body: JSON.stringify({
+						'completed': newCompleted
+					}),
+					headers: {
+						'Content-Type': 'application/json',
+					}
+				}
+				).then(function () {
+					document.getElementById('error').classList.add(".d-none");
+				})
+					.catch(function () {
+						document.getElementById('error').classList.remove(".d-none");
+					})
+			}
+		}
+
+		const tododeletes = document.querySelectorAll('.todo-delete');
+
+		for (let i = 0; i < tododeletes.length; i++) {
+			const tododelete = tododeletes[i];
+			tododelete.onclick = function (e) {
+				console.log('event', e);
+				const todoId = e.target.dataset['id'];
+				fetch('/todos/' + todoId + '/todo-delete', {
+					method: 'POST'
+				}
+				)
+			}
+		}
+
+		const descInput = document.getElementById('description');
+		document.getElementById('form').onsubmit = function (e) {
+			e.preventDefault();
+			const desc = descInput.value;
+			descInput.value = '';
+			fetch('/todos/create', {
+				method: 'POST',
+				body: JSON.stringify({
+					'description': desc,
+				}),
+				headers: {
+					'Content-Type': 'application/json',
+				}
+			})
+				.then(response => response.json())
+				.then(jsonResponse => {
+					console.log('response', jsonResponse);
+					li = document.createElement('li');
+					li.innerText = desc;
+					document.getElementById('todos').appendChild(li);
+					$('#error').hide();;
+				})
+				.catch(function () {
+					$('#error').show();
+				})
+		}
+	</script>
+
+</body>
+
+</html>
